@@ -3,13 +3,14 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import confetti from 'canvas-confetti'
 import type { Proposal } from '../lib/payload'
 import { buildCommits, makeHash, seededRandom } from '../lib/commits'
-import { branchName, hhmm, koDate, parseWhen } from '../lib/dates'
+import { annivLabel, branchName, dotDate, hhmm, koDate, parseDate, parseWhen } from '../lib/dates'
+import { artToRows, brokenHeartArt, heartArt } from '../lib/ascii'
 import DateTicket from '../components/DateTicket.vue'
 
 const props = defineProps<{ p: Proposal }>()
 
 type Seg = { t: string; c?: string }
-type Line = { id: number; segs: Seg[] }
+type Line = { id: number; segs: Seg[]; cls?: string; cols?: number }
 
 const commits = buildCommits(props.p)
 const head = commits[commits.length - 1].hash
@@ -46,6 +47,19 @@ function print(...segs: Seg[]) {
 
 const s = (t: string, c?: string): Seg => ({ t, c })
 
+/** 글자 그림을 한 줄씩 그린다 (그림 전체가 한 블록) */
+async function draw(rows: string[], cls: string, delay: number) {
+  if (!rows.length) return
+  lines.value.push({ id: uid++, segs: [s('')], cls: `art ${cls}`, cols: rows[0].length })
+  const line = lines.value[lines.value.length - 1]
+  for (let i = 0; i < rows.length; i++) {
+    line.segs[0].t += (i ? '\n' : '') + rows[i]
+    scrollDown()
+    await sleep(delay)
+  }
+  return line
+}
+
 async function type(cmd: string) {
   const line = print(s('➜ ', 'prompt'), s('~ ', 'path'), s('', 'cmd'))
   await sleep(380)
@@ -77,6 +91,12 @@ async function boot() {
   for (const c of commits) {
     print(s(c.hash + ' ', 'hash'), s(c.type + ': ', `type t-${c.type}`), s(c.msg), s(c.date ? `  ${c.date}` : '', 'dim'))
     await sleep(c.type === 'release' && c === commits[commits.length - 1] ? 700 : 420)
+  }
+
+  if (props.p.art) {
+    await sleep(500)
+    await type('cat 우리.jpg')
+    await draw(artToRows(props.p.art), 'photo', 45)
   }
 
   await sleep(600)
@@ -163,6 +183,10 @@ async function onNo() {
     print(...l)
     await sleep(110)
   }
+  if (noCount.value === 1) {
+    print(s(''))
+    await draw(brokenHeartArt(), 'broken', 50)
+  }
   print(s(''))
   ask()
 }
@@ -205,8 +229,21 @@ async function onYes() {
   print(s(''))
   print(s(` build #${days} `, 'badge-l'), s(' passing ✓ ', 'badge-r'))
   shake()
+  await sleep(700)
+
+  await type('./heart.sh')
+  const heart = await draw(heartArt(), 'heart', 55)
+  const { from, to, met } = props.p
+  lines.value.push({ id: uid++, segs: [s(`${from} ♥ ${to}`)], cls: 'names' })
+  lines.value.push({
+    id: uid++,
+    segs: [s(`since ${dotDate(parseDate(met))} · ${annivLabel(days)}`)],
+    cls: 'names-sub',
+  })
+  scrollDown()
+  if (heart) heart.cls += ' beat'
   celebrate()
-  await sleep(1400)
+  await sleep(2600)
   phase.value = 'done'
 }
 
@@ -229,7 +266,13 @@ onUnmounted(() => (alive = false))
 
   <div class="term" :class="{ shaking }">
     <div ref="screen" class="screen" @click="speedUp">
-      <div v-for="l in lines" :key="l.id" class="line">
+      <div
+        v-for="l in lines"
+        :key="l.id"
+        class="line"
+        :class="l.cls"
+        :style="l.cols ? { '--cols': l.cols } : undefined"
+      >
         <span v-for="(seg, i) in l.segs" :key="i" :class="seg.c">{{ seg.t }}</span>
       </div>
       <span class="cursor" />
@@ -299,6 +342,64 @@ onUnmounted(() => (alive = false))
   word-break: keep-all;
   overflow-wrap: anywhere;
   min-height: 1.75em;
+}
+
+/* 글자 그림: 화면 너비에 맞춰 글자 크기를 줄인다 */
+.screen {
+  container-type: inline-size;
+}
+.art {
+  --cols: 40;
+  white-space: pre;
+  word-break: normal;
+  overflow: hidden;
+  text-align: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: min(12px, calc(100cqw / (var(--cols) * 0.62)));
+  line-height: 1.05;
+  margin: 6px 0;
+}
+.art.photo {
+  color: #c9d1d9;
+}
+.art.broken {
+  color: var(--red);
+  font-weight: 700;
+}
+.art.heart {
+  color: var(--pink);
+  font-weight: 800;
+  text-shadow: 0 0 12px rgba(255, 126, 182, 0.55);
+}
+.art.beat {
+  animation: beat 1.1s ease-in-out infinite;
+}
+@keyframes beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.07);
+  }
+  28% {
+    transform: scale(0.98);
+  }
+  42% {
+    transform: scale(1.05);
+  }
+}
+.names {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 4px;
+}
+.names-sub {
+  text-align: center;
+  font-size: 11px;
+  color: var(--dim);
 }
 
 .cursor {

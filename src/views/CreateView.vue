@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { encodeProposal } from '../lib/payload'
 import { annivLabel, anniversaryDate, branchName, dayCount, koDate, ymd } from '../lib/dates'
+import { artToRows, photoToArt } from '../lib/ascii'
 
 const OPTIONS = [100, 200, 300, 365]
 
@@ -26,6 +27,24 @@ watch(anniv, (d) => {
 
 const today = computed(() => (form.met ? dayCount(form.met) : 0))
 
+// 사진은 링크에 담을 수 있도록 ASCII 아트로 바꿔서 보관 (원본은 어디에도 올라가지 않음)
+const art = ref('')
+const artPreview = computed(() => artToRows(art.value).join('\n'))
+const photoInput = ref<HTMLInputElement>()
+async function onPhoto(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  try {
+    art.value = await photoToArt(file)
+  } catch {
+    alert('이 사진은 변환할 수 없어요. 다른 사진을 골라주세요.')
+  }
+}
+function removePhoto() {
+  art.value = ''
+  if (photoInput.value) photoInput.value.value = ''
+}
+
 const ready = computed(
   () => !!(form.from.trim() && form.to.trim() && form.met && form.date && form.time && form.place.trim()),
 )
@@ -42,6 +61,7 @@ const link = computed(() => {
     place: form.place.trim(),
     msg: form.msg.trim() || undefined,
     born: born >= 1900 && born <= 2100 ? born : undefined,
+    art: art.value || undefined,
   })
   return `${location.origin}${location.pathname}#/p/${data}`
 })
@@ -134,6 +154,20 @@ function preview() {
         <span class="flag">-m</span>
         <input v-model="form.msg" placeholder="한마디 (선택)" maxlength="40" />
       </label>
+
+      <div class="field photo">
+        <span class="flag">--photo</span>
+        <button v-if="!art" type="button" class="pick" @click="photoInput?.click()">
+          둘이 찍은 사진 고르기 (선택)
+        </button>
+        <template v-else>
+          <span class="done">✓ 우리.jpg → ASCII</span>
+          <button type="button" class="remove" @click="removePhoto">삭제</button>
+        </template>
+        <input ref="photoInput" type="file" accept="image/*" hidden @change="onPhoto" />
+      </div>
+      <pre v-if="art" class="art-preview">{{ artPreview }}</pre>
+      <p v-if="art" class="hint">→ 사진은 글자 그림으로만 링크에 담겨요. 원본은 어디에도 올라가지 않아요.</p>
     </section>
 
     <section class="out" :class="{ ready }">
@@ -259,6 +293,42 @@ input[type='number']::-webkit-inner-spin-button {
   border-color: var(--pink);
   background: rgba(255, 126, 182, 0.12);
   color: var(--pink);
+}
+
+.photo .pick {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 12px 0;
+  font-size: 14px;
+  color: #6e7681;
+}
+.photo .done {
+  flex: 1;
+  font-size: 13px;
+  color: var(--green);
+}
+.photo .remove {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--dim);
+}
+.art-preview {
+  margin: 0;
+  padding: 10px 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-align: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 7px;
+  line-height: 1.05;
+  color: #c9d1d9;
+  overflow: hidden;
 }
 
 .hint {

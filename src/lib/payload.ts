@@ -13,9 +13,11 @@ export interface Proposal {
   msg?: string
   /** 상대 출생 연도 */
   born?: number
+  /** 사진을 변환한 ASCII 아트 (ascii.ts photoToArt 형식) */
+  art?: string
 }
 
-type Packed = [string, string, string, number, string, string, string, number]
+type Packed = [string, string, string, number, string, string, string, number, string?]
 
 function toBase64Url(bytes: Uint8Array) {
   let bin = ''
@@ -30,16 +32,17 @@ function fromBase64Url(s: string) {
 
 export function encodeProposal(p: Proposal): string {
   const packed: Packed = [p.from, p.to, p.met, p.days, p.when, p.place, p.msg ?? '', p.born ?? 0]
+  if (p.art) packed.push(p.art)
   return toBase64Url(new TextEncoder().encode(JSON.stringify(packed)))
 }
 
 export function decodeProposal(s: string): Proposal | null {
   try {
-    const [from, to, met, days, when, place, msg, born] = JSON.parse(
+    const [from, to, met, days, when, place, msg, born, art] = JSON.parse(
       new TextDecoder().decode(fromBase64Url(s)),
     ) as Packed
     if (!from || !to || !met || !days || !when) return null
-    return { from, to, met, days, when, place, msg: msg || undefined, born: born || undefined }
+    return { from, to, met, days, when, place, msg: msg || undefined, born: born || undefined, art: art || undefined }
   } catch {
     return null
   }
