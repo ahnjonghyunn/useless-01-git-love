@@ -85,7 +85,11 @@ function shake() {
 async function boot() {
   const { from, to, days, place, msg } = props.p
   print(s(`Last login: ${new Date().toDateString()} on ttys${String(days).padStart(3, '0')}`, 'dim'))
+  note(`${to}에게 도착한 데이트 신청이에요 💌`)
+  await sleep(500)
+  note('우리 둘의 저장소로 이동')
   await type(`cd love/${from}-and-${to}`)
+  note('지금까지 우리가 함께한 기록 보기')
   await type('git log --oneline --reverse')
 
   for (const c of commits) {
@@ -95,11 +99,13 @@ async function boot() {
 
   if (props.p.art) {
     await sleep(500)
+    note('우리 사진 열어보기')
     await type('cat 우리.jpg')
     await draw(artToRows(props.p.art), 'photo', 45)
   }
 
   await sleep(600)
+  note(`${from}${iGa(from)} 보낸 ${annivLabel(days)} 데이트 신청 합치기`)
   await type(`git merge proposal/${branchName(days)}`)
   print(s(`Updating ${head}..${mergeHash}`, 'dim'))
   print(s(' date.md | ', 'dim'), s(msg ? '4 ++++' : '3 +++', 'add'))
@@ -120,8 +126,20 @@ async function boot() {
 }
 
 function ask() {
+  note('이 데이트 신청을 받아줄래? (Y = 좋아 / n = 싫어)')
   print(s('Merge this proposal? ', 'ask'), s('[Y/n] ', 'ask-dim'))
   phase.value = 'ask'
+}
+
+/** 받침이 있으면 '이', 없으면 '가' (종현이 / 성희가) */
+function iGa(name: string) {
+  const code = name.charCodeAt(name.length - 1) - 0xac00
+  return code >= 0 && code <= 11171 && code % 28 !== 0 ? '이' : '가'
+}
+
+/** 개발자가 아니어도 이해할 수 있게 다는 한국어 주석 */
+function note(text: string) {
+  print(s(`# ${text}`, 'note'))
 }
 
 // ---------- Scene 3: n을 누르면 도망 ----------
@@ -183,6 +201,13 @@ async function onNo() {
     print(...l)
     await sleep(110)
   }
+  const notes = [
+    '충돌 발생! 거절하려는 마음과 신청한 마음이 부딪혔어요',
+    '거절했지만… 주말은 이미 예약돼 있어요',
+    '혹시 Y를 누르려다 실수한 거죠?',
+    "'싫어' 버튼이 사라졌어요. 이제 선택지는 하나뿐!",
+  ]
+  note(notes[Math.min(noCount.value, 4) - 1])
   if (noCount.value === 1) {
     print(s(''))
     await draw(brokenHeartArt(), 'broken', 50)
@@ -199,14 +224,15 @@ async function onYes() {
   lines.value[lines.value.length - 1].segs.push(s('Y', 'cmd'))
   await sleep(300)
   print(s(`Merge made by the 'heart' strategy.`, 'ok'))
+  note('신청 수락 완료! 데이트가 문제없는지 검사할게요')
   await sleep(500)
   await type('npm run ci')
 
   const { days } = props.p
   const steps: [string, string][] = [
-    ['lint', '설렘 수치 정상 범위 (초과)'],
-    ['test', `${days}/${days} passed`],
-    ['build', `done in ${days} days`],
+    ['lint', '설렘 수치 검사 → 정상 범위 초과'],
+    ['test', `함께한 ${days}일 → ${days}/${days} 통과`],
+    ['build', `데이트 준비 → ${days}일 만에 완성`],
   ]
   const frames = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
   for (const [name, desc] of steps) {
@@ -228,9 +254,11 @@ async function onYes() {
   await sleep(250)
   print(s(''))
   print(s(` build #${days} `, 'badge-l'), s(' passing ✓ ', 'badge-r'))
+  note('모든 검사 통과 = 데이트 확정 🎉')
   shake()
   await sleep(700)
 
+  note('마음 출력하기')
   await type('./heart.sh')
   const heart = await draw(heartArt(), 'heart', 55)
   const { from, to, met } = props.p
@@ -459,6 +487,9 @@ onUnmounted(() => (alive = false))
 }
 .spin {
   color: var(--pink);
+}
+.note {
+  color: #6a9955;
 }
 .ask {
   color: var(--pink);

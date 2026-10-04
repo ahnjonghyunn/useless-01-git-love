@@ -95,33 +95,33 @@ function preview() {
   <div class="titlebar"><div class="dots"><i /><i /><i /></div><span class="name">~/useless-01-git-love</span></div>
 
   <main class="create">
-    <p class="cmd"><span class="g">$</span> git init proposal</p>
+    <p class="cmd"><span class="g">$</span> git init proposal <span class="c"># 데이트 신청서 만들기</span></p>
     <h1><em>데이트 신청서</em><br />생성기</h1>
     <p class="sub">
-      링크를 받은 사람은 터미널에서 <b>merge 요청</b>을 받습니다.<br />
-      거절하면… <span class="r">merge conflict</span>.
+      링크를 받은 사람은 개발자 화면(터미널)에서<br />
+      <b>데이트 신청</b>을 받아요. 거절하면… <span class="r">충돌(conflict)</span>이 나요.
     </p>
 
     <section class="fields">
       <label>
-        <span class="flag">--from</span>
+        <span class="flag">--from<small>보내는 사람</small></span>
         <input v-model="form.from" placeholder="내 이름" maxlength="12" />
       </label>
       <label>
-        <span class="flag">--to</span>
+        <span class="flag">--to<small>받는 사람</small></span>
         <input v-model="form.to" placeholder="상대 이름" maxlength="12" />
       </label>
       <label>
-        <span class="flag">--since</span>
+        <span class="flag">--since<small>처음 만난 날</small></span>
         <input v-model="form.met" type="date" />
       </label>
       <label>
-        <span class="flag">--born</span>
+        <span class="flag">--born<small>상대 생년</small></span>
         <input v-model="form.born" type="number" inputmode="numeric" placeholder="상대 출생 연도 (선택)" />
       </label>
 
       <div class="field">
-        <span class="flag">--days</span>
+        <span class="flag">--days<small>기념일</small></span>
         <div class="chips">
           <button
             v-for="d in OPTIONS"
@@ -139,24 +139,24 @@ function preview() {
       </p>
 
       <label>
-        <span class="flag">--date</span>
+        <span class="flag">--date<small>데이트 날짜</small></span>
         <input v-model="form.date" type="date" @input="dateTouched = true" />
       </label>
       <label>
-        <span class="flag">--time</span>
+        <span class="flag">--time<small>시간</small></span>
         <input v-model="form.time" type="time" />
       </label>
       <label>
-        <span class="flag">--place</span>
+        <span class="flag">--place<small>장소</small></span>
         <input v-model="form.place" placeholder="데이트 장소" maxlength="30" />
       </label>
       <label>
-        <span class="flag">-m</span>
+        <span class="flag">-m<small>한마디</small></span>
         <input v-model="form.msg" placeholder="한마디 (선택)" maxlength="40" />
       </label>
 
       <div class="field photo">
-        <span class="flag">--photo</span>
+        <span class="flag">--photo<small>사진</small></span>
         <button v-if="!art" type="button" class="pick" @click="photoInput?.click()">
           둘이 찍은 사진 고르기 (선택)
         </button>
@@ -174,6 +174,7 @@ function preview() {
       <p class="cmd">
         <span class="g">$</span> git push origin proposal/{{ branchName(form.days) }}
       </p>
+      <p class="c out-c"># 아래 링크를 상대에게 보내면 끝!</p>
       <template v-if="ready">
         <div class="link">{{ link }}</div>
         <div class="btns">
@@ -182,7 +183,7 @@ function preview() {
           <button type="button" @click="preview">미리보기</button>
         </div>
       </template>
-      <p v-else class="hint">error: 필수 옵션을 채워주세요 (--from --to --since --date --place)</p>
+      <p v-else class="hint">error: 보내는 사람, 받는 사람, 처음 만난 날, 데이트 날짜, 장소를 채워주세요</p>
     </section>
 
     <footer>무쓸모 연구소 · useless #01</footer>
@@ -255,8 +256,24 @@ label:focus-within {
 .flag {
   color: var(--purple);
   font-size: 12px;
-  width: 58px;
+  width: 78px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 0;
+}
+.flag small {
+  font-size: 10px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.c {
+  color: #6a9955;
+}
+.out-c {
+  margin: -8px 0 12px;
+  font-size: 12px;
 }
 
 input {
