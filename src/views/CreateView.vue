@@ -96,7 +96,7 @@ function preview() {
 
   <main class="create">
     <p class="cmd"><span class="g">$</span> git init proposal</p>
-    <h1>개발자식<br /><em>데이트 신청서</em><br />생성기</h1>
+    <h1><em>데이트 신청서</em><br />생성기</h1>
     <p class="sub">
       링크를 받은 사람은 터미널에서 <b>merge 요청</b>을 받습니다.<br />
       거절하면… <span class="r">merge conflict</span>.
